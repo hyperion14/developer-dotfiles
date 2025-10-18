@@ -1,0 +1,546 @@
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, BackgroundTasks, Depends
+from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.requests import Request
+from sqlalchemy import create_engine, Column, String, DateTime, Text, Integer, Float, Boolean
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+import asyncio
+import aiofiles
+import os
+from pathlib import Path
+from typing import List, Optional, Dict, Any
+import uuid
+from datetime import datetime
+import json
+import boto3
+from loguru import logger
+
+# Deutsche Legal-NLP
+from flair.models import SequenceTagger
+from flair.data import Sentence
+import spacy
+
+# App Initialisierung
+app = FastAPI(
+    title="🏛️ IONOS Deutsches Juristisches RAG System",
+    description="RAG System für deutsche Rechtsdokumente mit IONOS Cloud",
+    version="2.0.0"
+)
+
+# CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Static Files & Templates
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
+
+# Global Variables für NLP Models
+legal_ner = None
+german_nlp = None
+s3_client = None
+
+# Database Models
+Base = declarative_base()
+
+class LegalDocument(Base):
+    __tablename__ = "legal_documents"
+    
+    document_id = Column(String, primary_key=True)
+    title = Column(String, nullable=False)
+    original_filename = Column(String)
+    
+    # Rechtsgebiet-Klassifikation
+    primary_domain = Column(String, nullable=False)  # zivilrecht, strafrecht, etc.
+    sub_domains = Column(Text)  # JSON Array
+    legal_area_confidence = Column(Float)
+    
+    # Gerichtshierarchie
+    court_level = Column(String)  # BGH, OLG, LG, AG
+    court_location = Column(String)
+    case_number = Column(String)
+    decision_date = Column(DateTime)
+    
+    # Status
+    processing_status = Column(String, default="uploaded")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Speicherorte
+    s3_original_key = Column(String)
+    s3_processed_key = Column(String)
+
+class LegalEntity(Base):
+    __tablename__ = "legal_entities"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    document_id = Column(String, nullable=False)
+    entity_text = Column(String, nullable=False)
+    entity_type = Column(String)  # GS, PER, ORG, GRT aus Flair
+    flair_confidence = Column(Float)
+    legal_classification = Column(String)
+
+# Database Setup
+DATABASE_URL = os.getenv("POSTGRES_URL")
+engine = create_async_engine(DATABASE_URL)
+SessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+async def get_db():
+    async with SessionLocal() as session:
+        yield session
+
+# Startup: Models laden & DB initialisieren
+@app.on_event("startup")
+async def startup():
+    global legal_ner, german_nlp, s3_client
+    
+    logger.info("🏛️ Starte IONOS Deutsches Juristisches RAG System...")
+    
+    # Database Tables erstellen
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    
+    # Deutsche Legal-NLP Models laden
+    try:
+        legal_ner = SequenceTagger.load("flair/ner-german-legal")
+        german_nlp = spacy.load("de_core_news_lg")
+        logger.info("✅ Deutsche Legal-NLP Modelle geladen")
+    except Exception as e:
+        logger.error(f"⚠️ Fehler beim Laden der NLP-Modelle: {e}")
+    
+    # IONOS S3 Client
+    try:
+        s3_client = boto3.client(
+            's3',
+            endpoint_url=os.getenv('S3_ENDPOINT'),
+            aws_access_key_id=os.getenv('S3_ACCESS_KEY'),
+            aws_secret_access_key=os.getenv('S3_SECRET_KEY'),
+            region_name='eu-central-1'
+        )
+        logger.info("✅ IONOS S3 Client initialisiert")
+    except Exception as e:
+        logger.error(f"⚠️ S3 Client Fehler: {e}")
+    
+    logger.info("🚀 System bereit!")
+
+# === GUI ENDPOINTS ===
+
+@app.get("/")
+async def dashboard(request: Request):
+    """Haupt-Dashboard"""
+    return templates.TemplateResponse("dashboard.html", {"request": request})
+
+@app.get("/upload")
+async def upload_page(request: Request):
+    """Upload-Seite"""
+    return templates.TemplateResponse("upload.html", {"request": request})
+
+@app.get("/search")
+async def search_page(request: Request):
+    """Such-Interface"""
+    return templates.TemplateResponse("search.html", {"request": request})
+
+@app.get("/domains")
+async def domains_page(request: Request):
+    """Rechtsgebiet-spezifische Suche"""
+    return templates.TemplateResponse("domain-search.html", {"request": request})
+
+# === API ENDPOINTS ===
+
+@app.post("/api/upload")
+async def upload_documents(
+    files: List[UploadFile] = File(...),
+    document_type: str = Form(...),
+    court_level: Optional[str] = Form(None),
+    legal_area: Optional[str] = Form(None),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
+    db: AsyncSession = Depends(get_db)
+):
+    """Dokumente hochladen mit deutscher Legal-NLP Verarbeitung"""
+    
+    uploaded_docs = []
+    
+    for file in files:
+        if not file.filename:
+            continue
+        
+        # Validierung
+        file_ext = Path(file.filename).suffix.lower()
+        if file_ext not in ['.pdf', '.docx', '.doc', '.txt', '.rtf']:
+            raise HTTPException(400, f"Dateityp {file_ext} nicht unterstützt")
+        
+        doc_id = str(uuid.uuid4())
+        
+        # Datei zu IONOS S3 hochladen
+        s3_key = f"legal-documents/{legal_area or 'general'}/{doc_id}/{file.filename}"
+        
+        try:
+            file_content = await file.read()
+            s3_client.put_object(
+                Bucket=os.getenv('S3_BUCKET'),
+                Key=s3_key,
+                Body=file_content,
+                Metadata={
+                    'document-type': document_type,
+                    'court-level': court_level or 'unknown',
+                    'legal-area': legal_area or 'general'
+                }
+            )
+        except Exception as e:
+            logger.error(f"S3 Upload Fehler: {e}")
+            raise HTTPException(500, f"Upload-Fehler: {str(e)}")
+        
+        # Datenbank-Eintrag
+        doc_record = LegalDocument(
+            document_id=doc_id,
+            title=file.filename,
+            original_filename=file.filename,
+            primary_domain=legal_area or 'general',
+            court_level=court_level,
+            processing_status="uploaded",
+            s3_original_key=s3_key
+        )
+        
+        db.add(doc_record)
+        await db.commit()
+        
+        # Background-Verarbeitung mit deutscher Legal-NLP
+        background_tasks.add_task(process_document_with_german_nlp, doc_id, s3_key)
+        
+        uploaded_docs.append({
+            "id": doc_id,
+            "filename": file.filename,
+            "s3_location": s3_key,
+            "status": "processing"
+        })
+        
+        logger.info(f"📄 Dokument hochgeladen: {file.filename} → {doc_id}")
+    
+    return {
+        "success": True,
+        "uploaded_documents": uploaded_docs,
+        "processing": "Deutsche Legal-NLP Analyse gestartet"
+    }
+
+async def process_document_with_german_nlp(doc_id: str, s3_key: str):
+    """Background-Verarbeitung mit Flair German Legal NER"""
+    
+    try:
+        # Text aus S3 extrahieren
+        s3_response = s3_client.get_object(Bucket=os.getenv('S3_BUCKET'), Key=s3_key)
+        file_content = s3_response['Body'].read()
+        
+        # Text-Extraktion (vereinfacht für Demo)
+        extracted_text = file_content.decode('utf-8', errors='ignore')[:5000]
+        
+        # Deutsche Legal Entity Recognition mit Flair
+        legal_entities = []
+        if legal_ner:
+            sentence = Sentence(extracted_text, use_tokenizer=False)
+            legal_ner.predict(sentence)
+            
+            for entity in sentence.get_spans('ner'):
+                legal_entities.append({
+                    'text': entity.text,
+                    'type': entity.labels[0].value,
+                    'confidence': entity.labels[0].score,
+                    'start': entity.start_position,
+                    'end': entity.end_position
+                })
+        
+        # Rechtsgebiet-Klassifikation (vereinfacht)
+        primary_domain = classify_legal_domain(extracted_text, legal_entities)
+        
+        # Verarbeitete Daten zu S3 speichern
+        processed_s3_key = s3_key.replace('legal-documents/', 'processed/')
+        processed_data = {
+            'document_id': doc_id,
+            'extracted_text': extracted_text,
+            'legal_entities': legal_entities,
+            'primary_domain': primary_domain,
+            'processing_timestamp': datetime.utcnow().isoformat()
+        }
+        
+        s3_client.put_object(
+            Bucket=os.getenv('S3_BUCKET'),
+            Key=processed_s3_key,
+            Body=json.dumps(processed_data, ensure_ascii=False),
+            ContentType='application/json'
+        )
+        
+        # Datenbank aktualisieren
+        async with SessionLocal() as db:
+            doc = await db.get(LegalDocument, doc_id)
+            if doc:
+                doc.processing_status = "completed"
+                doc.primary_domain = primary_domain
+                doc.legal_area_confidence = 0.85  # Placeholder
+                doc.s3_processed_key = processed_s3_key
+                
+                # Legal Entities speichern
+                for entity_data in legal_entities:
+                    entity = LegalEntity(
+                        document_id=doc_id,
+                        entity_text=entity_data['text'],
+                        entity_type=entity_data['type'],
+                        flair_confidence=entity_data['confidence'],
+                        legal_classification=classify_legal_entity_type(entity_data['type'])
+                    )
+                    db.add(entity)
+                
+                await db.commit()
+        
+        logger.info(f"✅ Dokument verarbeitet: {doc_id} → {primary_domain}")
+        
+    except Exception as e:
+        logger.error(f"⚠️ Verarbeitungsfehler {doc_id}: {str(e)}")
+        
+        # Fehler-Status setzen
+        async with SessionLocal() as db:
+            doc = await db.get(LegalDocument, doc_id)
+            if doc:
+                doc.processing_status = "failed"
+                await db.commit()
+
+def classify_legal_domain(text: str, entities: List[Dict]) -> str:
+    """Einfache Rechtsgebiet-Klassifikation basierend auf Keywords"""
+    
+    text_lower = text.lower()
+    
+    # Rechtsgebiet-Keywords
+    domain_keywords = {
+        'zivilrecht': ['kaufvertrag', 'schadensersatz', 'bgb', 'kläger', 'beklagte', 'vertragsstrafe'],
+        'strafrecht': ['angeklagte', 'staatsanwaltschaft', 'stgb', 'freiheitsstrafe', 'geldstrafe'],
+        'arbeitsrecht': ['kündigung', 'arbeitnehmer', 'arbeitgeber', 'kündigungsschutz', 'betriebsrat'],
+        'mietrecht': ['mieter', 'vermieter', 'mietminderung', 'nebenkosten', 'kaution'],
+        'familienrecht': ['ehescheidung', 'unterhalt', 'sorgerecht', 'ehegatten'],
+        'erbrecht': ['testament', 'erblasser', 'pflichtteil', 'erbfolge']
+    }
+    
+    # Scoring pro Rechtsgebiet
+    domain_scores = {}
+    for domain, keywords in domain_keywords.items():
+        score = sum(1 for keyword in keywords if keyword in text_lower)
+        # Bonus für Legal Entities
+        entity_bonus = sum(1 for entity in entities if entity['type'] in ['GS', 'GRT'])
+        domain_scores[domain] = score + entity_bonus * 0.5
+    
+    # Bestes Rechtsgebiet
+    best_domain = max(domain_scores, key=domain_scores.get, default='general')
+    return best_domain if domain_scores[best_domain] > 0 else 'general'
+
+def classify_legal_entity_type(flair_label: str) -> str:
+    """Flair-Labels zu deutschen Rechtsbegriffen"""
+    
+    classification_map = {
+        'GS': 'Gesetz/Statute',
+        'GRT': 'Gericht/Court', 
+        'PER': 'Person',
+        'ORG': 'Organisation',
+        'RS': 'Rechtsprechung',
+        'RR': 'Rechtsregel',
+        'VO': 'Verordnung',
+        'VT': 'Vertrag',
+        'UN': 'Urteilsnummer',
+        'DAT': 'Datum',
+        'GEL': 'Geldbetrag'
+    }
+    
+    return classification_map.get(flair_label, 'Sonstiges')
+
+@app.get("/api/documents")
+async def list_documents(
+    limit: int = 50,
+    domain: Optional[str] = None,
+    court_level: Optional[str] = None,
+    status: Optional[str] = None,
+    db: AsyncSession = Depends(get_db)
+):
+    """Dokumente auflisten mit Filterung"""
+    
+    query = db.query(LegalDocument)
+    
+    if domain:
+        query = query.filter(LegalDocument.primary_domain == domain)
+    if court_level:
+        query = query.filter(LegalDocument.court_level == court_level)
+    if status:
+        query = query.filter(LegalDocument.processing_status == status)
+    
+    documents = query.limit(limit).all()
+    
+    return {
+        "documents": [
+            {
+                "id": doc.document_id,
+                "title": doc.title,
+                "primary_domain": doc.primary_domain,
+                "court_level": doc.court_level,
+                "case_number": doc.case_number,
+                "processing_status": doc.processing_status,
+                "created_at": doc.created_at.isoformat() if doc.created_at else None,
+                "legal_area_confidence": doc.legal_area_confidence
+            }
+            for doc in documents
+        ]
+    }
+
+@app.get("/api/search")
+async def search_documents(
+    query: str,
+    domain: Optional[str] = None,
+    limit: int = 20,
+    db: AsyncSession = Depends(get_db)
+):
+    """Einfache Textsuche in Dokumenten"""
+    
+    # Placeholder für echte Vektor-Suche
+    # Hier würde IONOS AI Hub Vector Search integriert werden
+    
+    base_query = db.query(LegalDocument).filter(
+        LegalDocument.processing_status == "completed"
+    )
+    
+    if domain:
+        base_query = base_query.filter(LegalDocument.primary_domain == domain)
+    
+    # Einfache Titel-Suche als Placeholder
+    documents = base_query.filter(
+        LegalDocument.title.ilike(f"%{query}%")
+    ).limit(limit).all()
+    
+    return {
+        "query": query,
+        "domain_filter": domain,
+        "results": [
+            {
+                "id": doc.document_id,
+                "title": doc.title,
+                "primary_domain": doc.primary_domain,
+                "court_level": doc.court_level,
+                "relevance_score": 0.85  # Placeholder
+            }
+            for doc in documents
+        ],
+        "search_method": "Placeholder - IONOS AI Hub Vector Search wird integriert"
+    }
+
+@app.get("/api/legal-domains")
+async def get_legal_domains():
+    """Verfügbare Rechtsgebiete"""
+    
+    return {
+        "available_domains": [
+            {"code": "zivilrecht", "name": "Zivilrecht", "description": "BGB, Vertragsrecht, Schadensersatz"},
+            {"code": "strafrecht", "name": "Strafrecht", "description": "StGB, Strafverfahren"},
+            {"code": "arbeitsrecht", "name": "Arbeitsrecht", "description": "Kündigungsschutz, Tarifrecht"},
+            {"code": "mietrecht", "name": "Mietrecht", "description": "Mietminderung, Nebenkosten"},
+            {"code": "familienrecht", "name": "Familienrecht", "description": "Scheidung, Unterhalt"},
+            {"code": "erbrecht", "name": "Erbrecht", "description": "Testament, Erbfolge"}
+        ],
+        "features": [
+            "Flair German Legal NER",
+            "Rechtsgebiet-Klassifikation",
+            "IONOS AI Hub Integration",
+            "S3 Object Storage"
+        ]
+    }
+
+# OpenAI-kompatible Endpoints für Open WebUI
+@app.get("/v1/models")
+async def list_models():
+    return {
+        "data": [{
+            "id": "ionos-german-legal-rag",
+            "object": "model",
+            "created": 1677610602,
+            "owned_by": "ionos-legal-system"
+        }]
+    }
+
+@app.post("/v1/chat/completions")
+async def chat_completions(request: Request):
+    """OpenAI-kompatible Chat Completions für Open WebUI"""
+    
+    body = await request.json()
+    messages = body.get("messages", [])
+    last_message = messages[-1]["content"] if messages else ""
+    
+    # Placeholder Response
+    response_text = f"🏛️ Deutsche Rechtsfrage analysiert: '{last_message}'\n\n"
+    response_text += "Das IONOS Legal-RAG System mit Flair German Legal NER würde hier eine detaillierte juristische Analyse liefern, "
+    response_text += "basierend auf deutschen Rechtsdokumenten und unter Verwendung des Knowledge Graphs."
+    
+    if body.get("stream", False):
+        # Streaming Response
+        async def generate():
+            words = response_text.split()
+            for i, word in enumerate(words):
+                chunk_data = {
+                    "id": f"chatcmpl-{uuid.uuid4()}",
+                    "object": "chat.completion.chunk",
+                    "created": int(datetime.now().timestamp()),
+                    "model": "ionos-german-legal-rag",
+                    "choices": [{
+                        "index": 0,
+                        "delta": {"content": word + " "},
+                        "finish_reason": None
+                    }]
+                }
+                yield f"data: {json.dumps(chunk_data)}\n\n"
+                await asyncio.sleep(0.02)
+            
+            # Final chunk
+            final_chunk = {
+                "id": f"chatcmpl-{uuid.uuid4()}",
+                "object": "chat.completion.chunk",
+                "created": int(datetime.now().timestamp()),
+                "model": "ionos-german-legal-rag",
+                "choices": [{
+                    "index": 0,
+                    "delta": {},
+                    "finish_reason": "stop"
+                }]
+            }
+            yield f"data: {json.dumps(final_chunk)}\n\n"
+            yield "data: [DONE]\n\n"
+        
+        return StreamingResponse(generate(), media_type="text/plain")
+    else:
+        return {
+            "id": f"chatcmpl-{uuid.uuid4()}",
+            "object": "chat.completion",
+            "created": int(datetime.now().timestamp()),
+            "model": "ionos-german-legal-rag",
+            "choices": [{
+                "index": 0,
+                "message": {
+                    "role": "assistant",
+                    "content": response_text
+                },
+                "finish_reason": "stop"
+            }]
+        }
+
+@app.get("/health")
+async def health():
+    """Health Check für IONOS Monitoring"""
+    return {
+        "status": "healthy",
+        "service": "ionos-deutsches-juristisches-rag-system",
+        "version": "2.0.0",
+        "features": ["Flair German Legal NER", "IONOS AI Hub", "S3 Storage"],
+        "timestamp": datetime.utcnow().isoformat()
+    }
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

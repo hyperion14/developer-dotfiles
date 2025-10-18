@@ -1,0 +1,181 @@
+version: '3.8'
+
+services:
+  # Haupt Legal-RAG Application
+  legal-rag-api:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: ionos-legal-rag-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      # IONOS AI Hub Integration
+      - IONOS_AI_HUB_API_KEY=${IONOS_AI_HUB_API_KEY}
+      - IONOS_AI_HUB_ENDPOINT=https://ai.cloud.ionos.com/v1
+      
+      # Database Connections
+      - POSTGRES_URL=postgresql://legal_user:${POSTGRES_PASSWORD}@postgres:5432/legal_db
+      - NEO4J_URL=bolt://neo4j:7687
+      - NEO4J_USERNAME=neo4j
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      
+      # IONOS Object Storage (S3)
+      - S3_ENDPOINT=https://s3-eu-central-1.ionoscloud.com
+      - S3_BUCKET=${S3_BUCKET}
+      - S3_ACCESS_KEY=${S3_ACCESS_KEY}
+      - S3_SECRET_KEY=${S3_SECRET_KEY}
+      
+      # German Legal NLP
+      - USE_FLAIR_LEGAL_NER=true
+      - SPACY_MODEL=de_core_news_lg
+      
+      # Performance (IONOS VPS optimiert)
+      - OMP_NUM_THREADS=8
+      - TOKENIZERS_PARALLELISM=true
+      
+    volumes:
+      - ./data:/app/data
+      - ./templates:/app/templates
+      - ./static:/app/static
+    depends_on:
+      postgres:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+          cpus: '6.0'
+    networks:
+      - legal-rag-network
+
+  # PostgreSQL - Rechtsgebiet-spezifische Metadaten
+  postgres:
+    image: postgres:16-alpine
+    container_name: ionos-legal-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: legal_db
+      POSTGRES_USER: legal_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=de_DE.UTF-8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./config/init-db.sql:/docker-entrypoint-initdb.d/01-init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U legal_user -d legal_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: '2.0'
+    networks:
+      - legal-rag-network
+
+  # Neo4j - Knowledge Graph für deutsche Rechtshierarchien
+  neo4j:
+    image: neo4j:5.15-community
+    container_name: ionos-legal-neo4j
+    restart: unless-stopped
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD}
+      NEO4J_ACCEPT_LICENSE_AGREEMENT: "yes"
+      # IONOS VPS optimiert
+      NEO4J_dbms_memory_heap_initial__size: 1g
+      NEO4J_dbms_memory_heap_max__size: 3g
+      NEO4J_dbms_memory_pagecache_size: 1g
+      NEO4J_PLUGINS: '["apoc", "gds"]'
+      NEO4J_dbms_security_procedures_unrestricted: gds.*,apoc.*
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p ${NEO4J_PASSWORD} 'RETURN 1'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: '2.0'
+    networks:
+      - legal-rag-network
+
+  # Redis - Caching & Sessions
+  redis:
+    image: redis:7-alpine
+    container_name: ionos-legal-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+    networks:
+      - legal-rag-network
+
+  # Open WebUI - Chat Interface  
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: ionos-legal-webui
+    restart: unless-stopped
+    environment:
+      - OPENAI_API_BASE_URL=http://legal-rag-api:8000/v1
+      - OPENAI_API_KEY=sk-ionos-legal-rag
+      - WEBUI_NAME=Deutsches Juristisches RAG System
+      - WEBUI_LOCALE=de-DE
+      - ENABLE_SIGNUP=false
+    ports:
+      - "3000:8080"
+    volumes:
+      - webui_data:/app/backend/data
+    depends_on:
+      - legal-rag-api
+    networks:
+      - legal-rag-network
+
+  # Adminer - Database GUI
+  adminer:
+    image: adminer:latest
+    container_name: ionos-legal-adminer
+    restart: unless-stopped
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+      ADMINER_DESIGN: pepa-linha
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    networks:
+      - legal-rag-network
+
+volumes:
+  postgres_data:
+  neo4j_data:
+  neo4j_logs:
+  redis_data:
+  webui_data:
+
+networks:
+  legal-rag-network:
+    driver: bridge

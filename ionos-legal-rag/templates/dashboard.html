@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏛️ IONOS + Mistral Legal-RAG System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50" x-data="dashboard()">
+    <!-- Navigation -->
+    <nav class="bg-blue-900 text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4">
+                    <i class="fas fa-balance-scale text-2xl"></i>
+                    <h1 class="text-xl font-bold">IONOS + Mistral Legal-RAG System</h1>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="bg-green-600 px-2 py-1 rounded-full text-xs">IONOS Cloud</span>
+                    <span class="bg-purple-600 px-2 py-1 rounded-full text-xs">Mistral AI</span>
+                    <span class="bg-orange-600 px-2 py-1 rounded-full text-xs">Flair NER</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <!-- Multi-Provider Status -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">
+                ✅ Multi-Provider Legal-RAG System Online
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+                    <div class="text-2xl font-bold text-green-600" x-text="stats.total_documents || 0"></div>
+                    <div class="text-green-700 font-medium">Dokumente</div>
+                </div>
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+                    <div class="text-2xl font-bold text-blue-600">IONOS</div>
+                    <div class="text-blue-700 font-medium" x-text="providers.ionos ? 'Online' : 'Offline'"></div>
+                </div>
+                <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 text-center">
+                    <div class="text-2xl font-bold text-purple-600">Mistral</div>
+                    <div class="text-purple-700 font-medium" x-text="providers.mistral ? 'Online' : 'Offline'"></div>
+                </div>
+                <div class="bg-orange-50 border border-orange-200 rounded-lg p-4 text-center">
+                    <div class="text-2xl font-bold text-orange-600">7</div>
+                    <div class="text-orange-700 font-medium">Rechtsgebiete</div>
+                </div>
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
+                    <div class="text-2xl font-bold text-yellow-600">RAG</div>
+                    <div class="text-yellow-700 font-medium">Multi-Provider</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Model Provider Selection -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h3 class="text-xl font-bold mb-4">Model Provider Status</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="border rounded-lg p-4" :class="providers.ionos ? 'border-green-200 bg-green-50' : 'border-gray-200'">
+                    <div class="flex items-center mb-3">
+                        <i class="fas fa-cloud text-blue-600 text-2xl mr-3"></i>
+                        <div>
+                            <h4 class="font-semibold">IONOS AI Hub</h4>
+                            <p class="text-sm text-gray-600">Deutsche Legal Embeddings + S3</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        <div :class="providers.ionos ? 'bg-green-500' : 'bg-gray-400'" class="w-3 h-3 rounded-full mr-2"></div>
+                        <span x-text="providers.ionos ? 'Online' : 'Offline'" class="text-sm"></span>
+                    </div>
+                </div>
+
+                <div class="border rounded-lg p-4" :class="providers.mistral ? 'border-purple-200 bg-purple-50' : 'border-gray-200'">
+                    <div class="flex items-center mb-3">
+                        <i class="fas fa-brain text-purple-600 text-2xl mr-3"></i>
+                        <div>
+                            <h4 class="font-semibold">Mistral AI</h4>
+                            <p class="text-sm text-gray-600">Medium & Large Models</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        <div :class="providers.mistral ? 'bg-purple-500' : 'bg-gray-400'" class="w-3 h-3 rounded-full mr-2"></div>
+                        <span x-text="providers.mistral ? 'Online' : 'Offline'" class="text-sm"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <a href="/upload" class="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-4">
+                        <i class="fas fa-upload text-green-600 text-xl"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold">Dokumente hochladen</h3>
+                </div>
+                <p class="text-gray-600">Multi-Provider Legal-NLP Verarbeitung für deutsche Rechtsdokumente</p>
+            </a>
+
+            <a href="/domains" class="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
+                        <i class="fas fa-sitemap text-purple-600 text-xl"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold">Rechtsgebiete</h3>
+                </div>
+                <p class="text-gray-600">IONOS + Mistral AI für spezialisierte Rechtsgebiet-Analyse</p>
+            </a>
+
+            <a href="/search" class="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
+                        <i class="fas fa-search text-blue-600 text-xl"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold">Multi-Provider Suche</h3>
+                </div>
+                <p class="text-gray-600">RAG-Enhanced Search mit IONOS und Mistral AI</p>
+            </a>
+        </div>
+
+        <!-- Services Grid -->
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h3 class="text-xl font-bold mb-4">Verfügbare Services</h3>
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <a href="http://localhost:3000" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg text-center transition">
+                    <i class="fas fa-comments mb-1 block"></i>
+                    Chat Interface
+                    <div class="text-xs">Multi-Provider</div>
+                </a>
+                <a href="http://localhost:8080" target="_blank" class="bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg text-center transition">
+                    <i class="fas fa-database mb-1 block"></i>
+                    Database GUI
+                </a>
+                <a href="http://localhost:7474" target="_blank" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg text-center transition">
+                    <i class="fas fa-project-diagram mb-1 block"></i>
+                    Neo4j Graph
+                </a>
+                <a href="/api/docs" target="_blank" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-3 rounded-lg text-center transition">
+                    <i class="fas fa-code mb-1 block"></i>
+                    API Docs
+                    <div class="text-xs">v2.1.0</div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function dashboard() {
+            return {
+                stats: {},
+                providers: {
+                    ionos: false,
+                    mistral: false
+                },
+                
+                async init() {
+                    await this.loadStats();
+                    await this.loadProviders();
+                    setInterval(() => {
+                        this.loadStats();
+                        this.loadProviders();
+                    }, 30000);
+                },
+                
+                async loadStats() {
+                    try {
+                        const response = await fetch('/api/documents?limit=1');
+                        const data = await response.json();
+                        this.stats = { total_documents: data.documents.length };
+                    } catch (error) {
+                        console.error('Stats Fehler:', error);
+                    }
+                },
+                
+                async loadProviders() {
+                    try {
+                        const response = await fetch('/api/providers');
+                        const data = await response.json();
+                        this.providers = {
+                            ionos: data.providers.ionos?.available || false,
+                            mistral: data.providers.mistral?.available || false
+                        };
+                    } catch (error) {
+                        console.error('Provider Status Fehler:', error);
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
