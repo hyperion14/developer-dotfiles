@@ -585,3 +585,392 @@ sudo apt update
 sudo apt upgrade
 ls -la
 exit
+ls -la
+git init
+git add *
+git commit -m "first commit"
+git commit -m 'Initial project version'
+git config --global justus.kampp@gmail.com
+git commit -m 'Initial project version'
+git config --global user.email "justus.kampp@gmail.com"
+git commit -m 'Initial project version'
+git remote add origin git@github.com:hyperion14/anythingLLL4legal.git
+git push --force origin main
+git remote set-url origin git@github.com:hyperion14/anythingLLL4legal.git
+git push --force origin main
+git branch
+git push --force origin master
+git add .
+git commit -m "Initial commit"
+git push --force origin master
+cd .git
+ls -la
+cd branches/
+ls 
+ls -la
+nano config
+cd ..
+nano COMMIT_EDITMSG
+nano config
+nano index 
+sudo systemctl restart ssh
+cd ./opt
+ls -la
+cd ../opt
+cd ..
+ls -ls
+ls- la
+ls -la
+cd developer/
+ls -la
+cd ..
+cd opt/
+ls 
+ls -la
+sudo apt update
+sudo apt upgrade
+# System aktualisieren
+sudo apt update && sudo apt upgrade -y
+# Basis-Tools
+sudo apt install -y     build-essential     git     curl     wget     vim     htop     tree     python3.11     python3.11-venv     python3-pip     docker.io     docker-compose
+# Docker-User-Rechte
+sudo usermod -aG docker $USER
+newgrp docker  # Oder neu einloggen
+# RAM-Check
+free -h
+# ✅ Erwartung: Total ~32GB, Available ~28GB
+# CPU-Check
+lscpu | grep "CPU(s)"
+# ✅ Erwartung: 8 Cores
+# Disk-Space
+df -h
+# ✅ Erwartung: >100GB frei (für Dokumente + Docker Images)
+# Hauptprojekt
+mkdir -p ~/bhk-rag-system
+cd ~/bhk-rag-system
+# Projekt-Sub-Struktur
+mkdir -p {src,tests,config,data,docs,scripts}
+mkdir -p src/{ingestion,retrieval,orchestration,api,models}
+mkdir -p src/ingestion/{docling,ner,chunking,parsers}
+mkdir -p data/{raw,processed,test-docs,logs}
+mkdir -p config/{qdrant,neo4j,mistral}
+mkdir -p tests/{unit,integration,fixtures}
+# Docker-Konfigurationen
+mkdir -p docker/{qdrant,neo4j,api}
+# Git-Ignore vorbereiten
+cat > .gitignore << 'EOF'
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+venv/
+ENV/
+.venv
+*.egg-info/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Data & Logs
+data/raw/*
+data/processed/*
+data/logs/*
+*.log
+
+# Secrets
+.env
+.env.local
+*.pem
+*.key
+config/secrets/
+
+# Docker
+docker-compose.override.yml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project-specific
+neo4j/data/
+neo4j/logs/
+qdrant/storage/
+EOF
+
+cd ~/bhk-rag-system
+# Git init
+git init
+git config user.name "hpyerionn14"
+git config user.email "justus.kampp@gmail.com"
+# Erste README
+cat > README.md << 'EOF'
+# BHK RAG System
+
+Hybrid RAG-System für juristische Dokumente (Vergaberecht, Bau-/Architektenrecht)
+
+## Tech-Stack
+- **Vector DB**: Qdrant (Hybrid Search)
+- **Graph DB**: Neo4j 5.x
+- **LLM**: Mistral Le Platform
+- **NER**: Flair (ner-german-legal)
+- **Pipeline**: DocLing + Python 3.11
+
+## Status
+**Phase**: Chat 2 (DocLing & NER Pipeline Implementation)
+
+## Quick Start
+```bash
+./scripts/setup_env.sh
+docker-compose up -d
+poetry install
+poetry run pytest
+```
+
+## Dokumentation
+Siehe `/docs` Ordner
+EOF
+
+# Initial Commit
+git add .
+git commit -m "feat: Initial project structure and setup"
+git config user.name "Ihr Name"
+git config user.email "ihre@email.de"
+git add .
+git commit -m "feat: Initial project structure and setup"
+git remote add origin https://github.com/ihr-username/bhk-rag-system.git
+git branch -M main
+git push -u origin main
+git remote add origin https://github.com/hyperion14/bhk-rag-system.git
+git branch -M main
+git push -u origin main
+git remote add origin https://github.com/hyperion14/bhk-rag-system.git
+git branch -M main
+git push -u origin main
+git remote add origin https://github.com/hyperion14/bhk-rag-system.git
+git branch -M main
+git push -u origin main
+cat > pyproject.toml << 'EOF'
+[tool.poetry]
+name = "bhk-rag-system"
+version = "0.1.0"
+description = "Hybrid RAG System für juristische Dokumente"
+authors = ["Ihr Name <ihre@email.de>"]
+readme = "README.md"
+python = "^3.11"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+# Core Dependencies
+docling = "^2.0.0"
+flair = "^0.13.0"
+qdrant-client = "^1.11.0"
+neo4j = "^5.24.0"
+mistralai = "^1.2.0"
+pydantic = "^2.9.0"
+python-dotenv = "^1.0.0"
+pyyaml = "^6.0"
+# NLP & Text Processing
+spacy = "^3.7.0"
+regex = "^2024.0.0"
+beautifulsoup4 = "^4.12.0"
+lxml = "^5.0.0"
+# Storage & I/O
+boto3 = "^1.35.0"  # IONOS S3
+psycopg2-binary = "^2.9.0"  # PostgreSQL
+sqlalchemy = "^2.0.0"  # ORM für Postgres
+alembic = "^1.13.0"  # DB Migrations
+# Utils
+loguru = "^0.7.0"
+tqdm = "^4.66.0"
+click = "^8.1.0"
+# API (später)
+fastapi = "^0.115.0"
+uvicorn = "^0.32.0"
+# Testing
+pytest = "^8.3.0"
+pytest-cov = "^5.0.0"
+pytest-asyncio = "^0.24.0"
+# Development
+black = "^24.0.0"
+ruff = "^0.6.0"
+mypy = "^1.11.0"
+pre-commit = "^3.8.0"
+
+[tool.poetry.group.dev.dependencies]
+ipython = "^8.27.0"
+jupyter = "^1.1.0"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.black]
+line-length = 100
+target-version = ['py311']
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+EOF
+
+# Dependencies installieren
+poetry install
+# Virtual Environment aktivieren
+poetry shell
+# Spacy DE-Modell laden (für Flair-Preprocessing)
+python -m spacy download de_core_news_sm
+cat > pyproject.toml << 'EOF'
+[tool.poetry]
+name = "bhk-rag-system"
+version = "0.1.0"
+description = "Hybrid RAG System für juristische Dokumente"
+authors = ["Ihr Name <ihre@email.de>"]
+readme = "README.md"
+python = "^3.11"
+
+
+poetry init
+sudo apt install python3-poetry
+# Oder direkt pyproject.toml erstellen:
+cat > pyproject.toml << 'EOF'
+[tool.poetry]
+name = "bhk-rag-system"
+version = "0.1.0"
+description = "Hybrid RAG System für juristische Dokumente"
+authors = ["Ihr Name <ihre@email.de>"]
+readme = "README.md"
+python = "^3.11"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+# Core Dependencies
+docling = "^2.0.0"
+flair = "^0.13.0"
+qdrant-client = "^1.11.0"
+neo4j = "^5.24.0"
+mistralai = "^1.2.0"
+pydantic = "^2.9.0"
+python-dotenv = "^1.0.0"
+pyyaml = "^6.0"
+# NLP & Text Processing
+spacy = "^3.7.0"
+regex = "^2024.0.0"
+beautifulsoup4 = "^4.12.0"
+lxml = "^5.0.0"
+# Storage & I/O
+boto3 = "^1.35.0"  # IONOS S3
+psycopg2-binary = "^2.9.0"  # PostgreSQL
+sqlalchemy = "^2.0.0"  # ORM für Postgres
+alembic = "^1.13.0"  # DB Migrations
+# Utils
+loguru = "^0.7.0"
+tqdm = "^4.66.0"
+click = "^8.1.0"
+# API (später)
+fastapi = "^0.115.0"
+uvicorn = "^0.32.0"
+# Testing
+pytest = "^8.3.0"
+pytest-cov = "^5.0.0"
+pytest-asyncio = "^0.24.0"
+# Development
+black = "^24.0.0"
+ruff = "^0.6.0"
+mypy = "^1.11.0"
+pre-commit = "^3.8.0"
+
+[tool.poetry.group.dev.dependencies]
+ipython = "^8.27.0"
+jupyter = "^1.1.0"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.black]
+line-length = 100
+target-version = ['py311']
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+EOF
+
+# Dependencies installieren
+poetry install
+# Virtual Environment aktivieren
+poetry shell
+# Spacy DE-Modell laden (für Flair-Preprocessing)
+python -m spacy download de_core_news_sm
+cat > .env.example << 'EOF'
+# === Mistral API ===
+MISTRAL_API_KEY=your_mistral_api_key_here
+
+# === IONOS S3 ===
+IONOS_S3_ACCESS_KEY=your_ionos_access_key
+IONOS_S3_SECRET_KEY=your_ionos_secret_key
+IONOS_S3_ENDPOINT=https://s3.de-central.ionos.com
+IONOS_S3_BUCKET=kanzlei-rag-prod
+
+# === Qdrant ===
+QDRANT_HOST=localhost
+QDRANT_PORT=6333
+QDRANT_GRPC_PORT=6334
+QDRANT_API_KEY=  # Leer für lokales Deployment
+
+# === Neo4j ===
+NEO4J_URI=bolt://localhost:7687
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=your_secure_password_here
+
+# === PostgreSQL (User-Logs, Audit-Trail) ===
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+POSTGRES_DB=bhk_rag
+POSTGRES_USER=bhk_admin
+POSTGRES_PASSWORD=your_postgres_password_here
+
+# === DocLing ===
+DOCLING_CACHE_DIR=/tmp/docling_cache
+DOCLING_OCR_ENGINE=tesseract  # oder: easyocr, paddleocr
+
+# === Logging ===
+LOG_LEVEL=INFO
+LOG_FILE=data/logs/pipeline.log
+
+# === Development ===
+ENV=development  # oder: production
+DEBUG=true
+EOF
+
+# Kopieren für lokale Entwicklung
+cp .env.example .env
+# WICHTIG: API-Keys eintragen!
+vim .env  # Oder VSCode
+# System aktualisieren
+sudo apt update && sudo apt upgrade -y
+# Basis-Tools
+sudo apt install -y     build-essential     git     curl     wget     vim     htop     tree     python3.11     python3.11-venv     python3-pip     docker.io     docker-compose
+# Docker-User-Rechte
+sudo usermod -aG docker $USER
+newgrp docker  # Oder neu einloggen
+# Python Poetry (Package Manager)
+curl -sSL https://install.python-poetry.org | python3 -
+# Tesseract OCR (für DocLing-Fallback)
+sudo apt install -y tesseract-ocr tesseract-ocr-deu
