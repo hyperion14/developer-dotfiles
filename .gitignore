@@ -1,22 +1,62 @@
-ionos-legal-rag/
-*.log
-.DS_Store
-.vscode/
-node_modules/
-dist/
+# Projects (have their own repos)
+projects/
+
+# Secrets & SSH Keys
+.credentials/
+.ssh/*.pem
+.ssh/*_rsa
+.ssh/*_rsa.pub
+.ssh/*_ed25519
+.ssh/*_ed25519.pub
+.ssh/known_hosts
+.ssh/known_hosts.old
+.ssh/config
+.ssh/config.old
 .env
+.env.*
+!.env.example
+
+# History & Sessions
+.bash_history
+.viminfo
+.lesshst
+.wget-hsts
+
+# Cache & Temporary
 .cache/
-.docker/
-.dotnet/
+.npm/
+.nvm/
 .local/
-.local/p* 
-.vsc
-.vscode/*
+.dotnet/
+.docker/
+
+# IDE & Development Tools
 .vscode-server/
-snapshots/
+.vscode-remote-containers/
+.claude/
+.claude.json
+.claude.json.backup
+.config/
+
+# Backups & Archives
+backups/
+*.tar.gz
+*.zip
+*_backup_*/
+
+# Data & Logs
+data/
+logs/
+*.log
+
+# System Files
+.DS_Store
+Thumbs.db
+.sudo_as_admin_successful
+
+# Snap
 snap/
-snap/*.snap
-snap/* 
 
-
-
+# Test & temporary documentation (keep strategy docs)
+MERGE_TEST_RESULTS.md
+CLEANUP_COMPLETE.md

@@ -1,6 +1,0 @@
-# warning
-Unzureichende Berechtigungen zur Verwaltung GET_REGION
-
-Bitten Sie Ihren Vertragsinhaber oder Administratoren, Ihnen die folgenden Berechtigungen mit Hilfe der Bucket-Richtlinie zu gewähren:
-
-s3:GetBucketLocation Kopieren
