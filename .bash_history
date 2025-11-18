@@ -1171,3 +1171,32 @@ docker-compose up -d
 docker-compose down
 docker-compose build --no-cache
 docker-compose up -d
+docker-compose down
+docker-compose build --no-cache
+docker-compose up -d
+mkdir .git
+./fix-nginx-ssl.sh 
+docker-compose down
+docker-cmopose up
+docker-compose up
+docker-compose restart
+echo "# bhk-md-converter" >> README.md
+git init
+git add README.md
+git commit -m "first commit"
+git branch -M main
+git remote add origin git@github.com:hyperion14/bhk-md-converter.git
+git push -u origin main
+sudo apt-get install -y apache2-utils
+sudo -n true 2>&1 && echo "SUDO_OK" || echo "SUDO_REQUIRES_PASSWORD"
+sudo nginx -t
+sudo systemctl reload nginx
+chmod +x check-auth-status.sh 
+./check-auth-status.sh 
+sudo cp nginx-con-eunomialegal-WITH-AUTH.conf /etc/nginx/sites-available/con-eunomialegal
+sudo nginx -t
+sudo systemctl reload nginx
+./check-auth-status.sh 
+cd /home/developer/projects/development/bhk-md-converter
+./create-users.sh
+./check-auth-status.sh 
