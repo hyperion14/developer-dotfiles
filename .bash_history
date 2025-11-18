@@ -974,3 +974,200 @@ newgrp docker  # Oder neu einloggen
 curl -sSL https://install.python-poetry.org | python3 -
 # Tesseract OCR (für DocLing-Fallback)
 sudo apt install -y tesseract-ocr tesseract-ocr-deu
+chmod +x rag_setup.sh 
+./rag_setup.sh 
+claude
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh
+chmod +x install_node.sh 
+.\install_node.sh
+./install_node.sh 
+npm install -g npm@11.6.2
+sudo npm install -g npm@11.6.2
+restart
+nvm install 24
+node _v
+node-v
+node -v
+npm -v
+npm install -g @anthropic-ai/claude-code
+claude
+docker ps
+# Debug Qdrant ZUERST
+docker logs bhk-qdrant --tail 50
+# Häufigste Ursache: Port-Konflikt
+netstat -tulpn | grep 6333
+# Quick Fix: Neustart mit Clean Slate
+docker-compose down
+docker volume rm bhk_qdrant_data  # ACHTUNG: Löscht vorhandene Daten!
+docker-compose up -d qdrant
+docker logs bhk-qdrant
+# In VSCode Terminal
+cd bhk_rag_pipeline
+cp .env.example .env
+# WICHTIG: .env editieren mit echten API-Keys!
+docker-compose build flask-pipeline
+docker-compose up -d flask-pipeline
+curl http://localhost:5001/health
+# Erwartete Antwort:
+# {"status": "healthy", "services": {"postgres": "ok", "neo4j": "ok", "qdrant": "ok"}}
+chmod +x pipline_install.sh 
+./pipline_install.sh 
+python3 -m pip install --upgrade pip
+./pipline_install.sh 
+ls -la
+chmod +x pipline_install.sh 
+./pipline_install.sh 
+./pipline_install.sh 
+pip install -r requirements.txt
+chmod +x merge_flask.sh 
+./merge_flask.sh 
+chmod +x setup_github_
+chmod +x setup_github_ssh.sh 
+./setup_github_ssh.sh 
+./setup_github_repos.sh 
+git config --global user.email "justus.kampp@gmail.com"
+git config --global user.name "hyperion14"
+ls-la
+ls -la
+rmdir -r .git
+rmdir --help
+rmdir -R .git
+rmdir .git
+rmdir -rf .git
+rmdir --rf .git
+rm -rf .git
+rm -rf .github/
+rm .gitmodules 
+rm .gitattributes 
+chmod +x setup_github_repos.sh 
+./setup_github_repos.sh 
+git remote add origin git@github.com:hyperion14/developer-dotfiles.git
+git branch -M main
+git push -u origin main
+ssh -T git@git-hub.com
+./migrate_server_structure.sh 
+sudo ./fix_permissions_first.sh 
+sudo ./migrate_server_structure.sh 
+./migrate_server_structure.sh 
+docker-compose down
+cd /home/developer/projects/production/anythingllm && docker ps -a | grep -E "anythingllm|ollama"
+cd /home/developer/projects/production/anythingllm && docker logs anythingllm --tail 50
+ls -la /home/developer/projects/production/anythingllm/anythingllm_data/
+file /home/developer/projects/production/anythingllm/anythingllm_data/anythingllm.db
+cd /home/developer/projects/production/anythingllm && docker exec anythingllm ls -la /app/server/storage/
+cd /home/developer/projects/production/anythingllm && docker exec anythingllm sqlite3 /app/server/storage/anythingllm.db "SELECT name FROM sqlite_master WHERE type='table';" 2>&1 | head -20
+cd /home/developer/projects/production/anythingllm && sqlite3 ./anythingllm_data/anythingllm.db "SELECT name FROM sqlite_master WHERE type='table';"
+cd /home/developer/projects/production/anythingllm && sqlite3 ./anythingllm_data/anythingllm.db "SELECT key, value FROM system_settings WHERE key LIKE '%llm%' OR key LIKE '%LLM%';"
+cd /home/developer/projects/production/anythingllm && sqlite3 ./anythingllm_data/anythingllm.db "SELECT id, username, role, suspended FROM users;"
+cd /home/developer/projects/production/anythingllm && sqlite3 ./anythingllm_data/anythingllm.db ".schema system_settings"
+cd /home/developer/projects/production/anythingllm && sqlite3 ./anythingllm_data/anythingllm.db "SELECT label, value FROM system_settings WHERE label LIKE '%llm%' OR label LIKE '%LLM%' OR label LIKE '%ollama%';"
+cd /home/developer/projects/production/anythingllm && sqlite3 ./anythingllm_data/anythingllm.db "SELECT label FROM system_settings LIMIT 20;"
+cd /home/developer/projects/production/anythingllm && sqlite3 ./anythingllm_data/anythingllm.db "SELECT label, value FROM system_settings;"
+cd /home/developer/projects/production/anythingllm && sqlite3 ./anythingllm_data/anythingllm.db ".schema workspaces"
+cd /home/developer/projects/production/anythingllm && sqlite3 ./anythingllm_data/anythingllm.db "SELECT id, name, chatProvider, chatModel, agentProvider, agentModel FROM workspaces;"
+cd /home/developer/projects/production/anythingllm && docker exec anythingllm env | grep -E "(LLM|OLLAMA|STORAGE)" | sort
+cd /home/developer/projects/production/anythingllm && docker logs anythingllm 2>&1 | grep -i "storage\|database\|persist" | head -20
+cd /home/developer/projects/production/anythingllm && docker exec anythingllm stat /app/server/storage/anythingllm.db
+cd /home/developer/projects/production/anythingllm && docker exec anythingllm whoami
+ls -la /home/developer/projects/production/anythingllm/anythingllm_data/ | grep -E "\.db|journal|lock"
+cd /home/developer/projects/production/anythingllm && docker inspect anythingllm | grep -A 10 "Mounts"
+cd /home/developer/projects/production/anythingllm && sqlite3 ./anythingllm_data/anythingllm.db "PRAGMA journal_mode;"
+cd /home/developer/projects/production/anythingllm && sqlite3 ./anythingllm_data/anythingllm.db "PRAGMA integrity_check;"
+cd /home/developer/projects/production/anythingllm && docker exec anythingllm cat /app/server/.env 2>&1 | head -30
+cd /home/developer/projects/production/anythingllm && docker logs anythingllm 2>&1 | grep -A 5 -B 5 "Loaded existing key" | head -30
+cd /home/developer/projects/production/anythingllm && sqlite3 ./anythingllm_data/anythingllm.db "SELECT id, name, chatProvider, chatModel FROM workspaces;"
+cd /home/developer/projects/production/anythingllm && docker logs anythingllm 2>&1 | grep -i "mistral\|llm\|provider" | tail -30
+cd /home/developer/projects/production/anythingllm && grep -i "llm\|mistral" .env
+cd /home/developer/projects/production/anythingllm && sqlite3 ./anythingllm_data/anythingllm.db "SELECT label, value FROM system_settings;" | grep -i "llm\|mistral\|provider" || echo "No LLM settings in system_settings"
+cd /home/developer/projects/production/anythingllm && docker-compose restart anythingllm
+sleep 5 && cd /home/developer/projects/production/anythingllm && docker logs anythingllm --tail 30 2>&1 | grep -E "LLM|mistral|ollama|server listening"
+cd /home/developer/projects/production/anythingllm && docker logs anythingllm --tail 5
+cd /home/developer/projects/production/anythingllm && sqlite3 ./anythingllm_data/anythingllm.db "SELECT id, name, chatProvider, chatModel FROM workspaces;"
+cd /home/developer/projects/production/anythingllm && grep -i "mistral\|api" .env
+cd /home/developer/projects/production/anythingllm && docker-compose restart anythingllm
+docker ps
+apt list --upgradable
+sudo apt -upgrade
+apt --upgrade
+apt -update
+sudo apt --update
+apt update
+apt --update
+apt --helpl
+apt --help
+apt --list
+s
+ls -la /home/developer/projects/production/anythingllm/
+ls -la /home/developer/projects/production/anythingllm/anythingllm_data/ | head -20
+mkdir -p /home/developer/projects/production/anythingllm/collector-hotdir /home/developer/projects/production/anythingllm/collector-outputs
+cd /home/developer/projects/production/anythingllm && docker-compose down
+cd /home/developer/projects/production/anythingllm && docker-compose up -d
+cd /home/developer/projects/production/anythingllm && docker-compose logs anythingllm | tail -30
+cd /home/developer/projects/production/anythingllm && docker-compose ps
+git@github.com:Mintplex-Labs/anything-llm.git
+git clone git@github.com:Mintplex-Labs/anything-llm.git
+docker ps
+sudo apt uddate
+apt update
+sudo apt update
+sudo apt upgrade
+ls -la
+sudo apt upgrade
+cd ./
+ls -la
+cd ~
+ls -la
+Lösung: Touristische Bedeutung könnte als DAWI (Daseinsvorsorge im weiteren Sinne) gewertet werden, was eine wirtschaftliche Beteiligung rechtfertigt.Begründung: Die touristische Infrastruktur ist für das Leben und Zusammenleben der Bürger in einer kommunalen Gemeinschaft existenziell notwendig, insbesondere in touristisch geprägten Regionen. Dies kann als Annex oder sinnvolle Abrundung der Daseinsvorsorge angesehen werden, auch wenn der Tätigkeitsschwerpunkt nicht ausschließlich der Daseinsvorsorge zuzuordnen ist 
+cd /home/developer/projects/production/anythingllm && docker ps
+ls -la /etc/letsencrypt/live/ 2>/dev/null || echo "No /etc/letsencrypt directory found"
+sudo ls -la /etc/letsencrypt/live/ 2>/dev/null || echo "Cannot access or directory doesn't exist"
+sudo ls -la /etc/letsencrypt/live/anythingllm.eunomialegal.de/
+ps aux | grep -E 'nginx|apache|httpd|node|python.*flask|python.*django|uvicorn|gunicorn' | grep -v grep
+ss -tulpn | grep LISTEN
+nginx -V 2>&1 | grep -E "configure arguments:|nginx version"
+ps aux | grep nginx | grep -v grep
+nginx -t 2>&1
+sudo nginx -t 2>&1
+ls -la /etc/nginx/
+cat /etc/nginx/nginx.conf
+ls -la /etc/nginx/sites-enabled/
+cat /etc/nginx/sites-available/anythingllm-main
+cat /etc/nginx/sites-available/default-ssl-proxy
+cat /etc/nginx/sites-available/jasper
+grep -E "worker_processes|worker_connections" /etc/nginx/nginx.conf
+nproc
+docker ps
+chmod x deploy.sh 
+chmod -x deploy.sh 
+.\deploy.sh
+python deploy.sh
+python3 deploy.sh
+./deploy.sh
+chmod +x deploy.sh 
+./deploy.sh
+docker-compose down
+docker-compose up
+sudo nano /etc/nginx/sites-available/con-eunomialegal
+sudo nginx -t
+sudo systemctl reload nginx
+sudo certbot --nginx -d con.eunomialegal.de
+sudo certbot renew --dry-run
+docker ps 
+sudo systemctl reload nginx
+sudo systemctl status nginx
+echo | openssl s_client -connect con.eunomialegal.de:443 -servername con.eunomialegal.de 2>/dev/null | openssl x509 -noout -subject -dates
+sudo nginx -t && sudo systemctl reload nginx
+sudo ln -s /etc/nginx/sites-available/con-eunomialegal /etc/nginx/sites-enabled/
+ls -la /etc/nginx/sites-enabled/ | grep con
+sudo nginx -t
+sudo systemctl reload nginx
+sudo
+sudo nano sites-available/con-eunomialegal 
+cd development/bhk-md-converter/
+git add
+docker-compose down
+docker-compose build --no-cache
+docker-compose up -d
+docker-compose down
+docker-compose build --no-cache
+docker-compose up -d
